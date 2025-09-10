@@ -10,49 +10,12 @@
 ## Branchements du/des CD4051
 ![image.png](./img.jpg)
 
-## Programme pour un potentiomètre diectement branché
+## Programme pour 2 potentiomètres directement branché et aussi 2 potentiomètres sur le CD4051
 ```
-# Version Control Change (CC)
-import board
-import analogio
-import time
-import usb_midi
-import adafruit_midi
-from adafruit_midi.control_change import ControlChange
-
-# Initialisation MIDI
-midi = adafruit_midi.MIDI(midi_out=usb_midi.ports[1], out_channel=0)
-potentiometre = analogio.AnalogIn(board.A3)
-
-# Configuration
-CONTROLEUR_MIDI = 1  # CC1 = Modulation Wheel
-valeur_precedente = -1
-seuil = 1000  # Seuil pour éviter l'envoi trop fréquent
-
-print("Contrôleur MIDI CC - Potentiomètre")
-print("----------------------------------")
-
-try:
-    while True:
-        valeur = potentiometre.value
-        valeur_cc = int((valeur / 65535) * 127)
-        
-        # Envoyer seulement si changement significatif
-        if abs(valeur - valeur_precedente) > seuil:
-            midi.send(ControlChange(CONTROLEUR_MIDI, valeur_cc))
-            print(f"CC{CONTROLEUR_MIDI}: {valeur_cc:3d}")
-            valeur_precedente = valeur
-        
-        time.sleep(0.02)
-        
-except KeyboardInterrupt:
-    print("\nArrêt du contrôleur CC.")
-```
-
-## Programme pour un potentiomètre diectement branché sur CD4051
-```
-# Contrôleur MIDI 8 canaux avec CD4051
+# Contrôleur MIDI hybride (CD4051 + potars directs) avec sélection de ports
 # Envoie des messages Control Change en temps réel
+# - 8 voies possibles via CD4051 (CC_BASE + canal)
+# - Potars directs sur entrées dédiées
 
 import board
 import analogio
@@ -62,99 +25,116 @@ import usb_midi
 import adafruit_midi
 from adafruit_midi.control_change import ControlChange
 
+# ================================
 # Configuration MIDI
-CC_BASE = 20  # Contrôleurs CC20 à CC27
-SEUIL = 1000  # Seuil de changement pour éviter le bruit
-CANAL_MIDI = 3  # Canal MIDI 4
+# ================================
+CANAL_MIDI = 6
+CC_BASE = 20      # CC20 → CC27 pour les canaux du CD4051
+SEUIL = 2      # Seuil anti-flutter
 
-# Configuration MIDI
 midi = adafruit_midi.MIDI(midi_out=usb_midi.ports[1], out_channel=CANAL_MIDI)
 
-# Configuration des broches du CD4051
-S0 = digitalio.DigitalInOut(board.GP0)  # Broche A0 (LSB)
-S1 = digitalio.DigitalInOut(board.GP1)  # Broche A1
-S2 = digitalio.DigitalInOut(board.GP2)  # Broche A2 (MSB)
-INH = digitalio.DigitalInOut(board.GP3)  # Broche INH (Inhibit)
+# ================================
+# Configuration du CD4051
+# ================================
+S0 = digitalio.DigitalInOut(board.GP0)
+S1 = digitalio.DigitalInOut(board.GP1)
+S2 = digitalio.DigitalInOut(board.GP2)
+INH = digitalio.DigitalInOut(board.GP3)
 
-# Configuration des broches en sortie
 for pin in [S0, S1, S2, INH]:
     pin.direction = digitalio.Direction.OUTPUT
 
-# Entrée analogique
-adc = analogio.AnalogIn(board.A0)
+adc = analogio.AnalogIn(board.A0)  # Entrée reliée au CD4051
 
+def activer_multiplexeur(actif: bool):
+    """Active/désactive le multiplexeur"""
+    INH.value = not actif
+    time.sleep(0.0001)
 
-
-def activer_multiplexeur(actif):
-    """Active ou désactive le multiplexeur via INH"""
-    INH.value = not actif  # LOW = actif, HIGH = désactivé
-    time.sleep(0.0001)     # Délai de stabilisation
-
-def selectionner_canal(canal):
-    """Sélectionne un canal spécifique (0-7) avec méthode bit à bit"""
-    # Désactiver pendant le changement
+def selectionner_canal(canal: int):
+    """Sélectionne un canal du CD4051 (0–7)"""
     activer_multiplexeur(False)
-    
-    # 🎯 MÉTHODE BIT À BIT EXCELLENTE !
-    S0.value = (canal >> 0) & 1  # Bit 0 (LSB)
-    S1.value = (canal >> 1) & 1  # Bit 1
-    S2.value = (canal >> 2) & 1  # Bit 2 (MSB)
-    
-    # Réactiver après changement
+    S0.value = (canal >> 0) & 1
+    S1.value = (canal >> 1) & 1
+    S2.value = (canal >> 2) & 1
     activer_multiplexeur(True)
-    time.sleep(0.0002)  # Délai de stabilisation
 
-def valeur_vers_midi(valeur_adc):
-    """Convertit la valeur ADC (0-65535) en valeur MIDI (0-127)"""
-    return max(0, min(127, int((valeur_adc / 65535) * 127)))
+def valeur_vers_midi(valeur_adc: int) -> int:
+    """Convertit valeur ADC (0–65535) en valeur MIDI (0–127)"""
+    #return max(0, min(127, int((valeur_adc / 65535) * 127)))
+    return max(0, min(127, int((valeur_adc / 4095) * 127)))# le 12 bits: 4095 = 2^12-1
 
-# Initialisation
-activer_multiplexeur(False)
-canal_actuel = 0
-valeur_prec = [0] * 8  # 8 valeurs précédentes
-derniere_valeur_midi = [-1] * 8  # Dernières valeurs MIDI envoyées
+# États précédents pour les 8 canaux du MUX
+valeur_prec_mux = [0] * 8
 
-print("Contrôleur MIDI CD4051 - CC20 à CC27")
-print("====================================")
-print("Envoi des messages Control Change en temps réel")
-print("Seuil de sensibilité:", SEUIL)
+# Liste des canaux actifs à lire sur le CD4051
+ports = [0, 1, 2, 3, 4, 5, 6, 7]  # tous les canaux
+ports = [0,1]  # exemple : seulement A2 et A3
+
+# ================================
+# Potars en entrée directe
+# ================================
+pots_directs = [
+    {"pin": analogio.AnalogIn(board.A1), "cc": 30, "last": -1},
+    {"pin": analogio.AnalogIn(board.A2), "cc": 31, "last": -1},
+]
+
+# ================================
+# Boucle principale
+# ================================
+print("🎛️ Contrôleur MIDI hybride (CD4051 + potars directs)")
+print("====================================================")
+print(f"Canal MIDI: {CANAL_MIDI}, CC_BASE: {CC_BASE}")
+print(f"Ports actifs CD4051: {ports}")
+print(f"Seuil: {SEUIL}")
 print()
-
-ports = [5]
 
 try:
     while True:
-        for e in ports:
-            canal_actuel = e
-            # Sélectionner et lire le canal actuel
+        # --- Lecture CD4051 ---
+        for canal_actuel in ports:
             selectionner_canal(canal_actuel)
-            valeur_adc = adc.value
+            valeur_adc_16_bits = adc.value# 12 bits normalement mais python renvoie avec un décallage
+            valeur_adc_12bit = adc.value >> 4   # divise par 16
+            valeur_midi = valeur_vers_midi(valeur_adc_12bit)
             
-            # Vérifier le changement significatif
-            if abs(valeur_adc - valeur_prec[canal_actuel]) > SEUIL:
-                valeur_midi = valeur_vers_midi(valeur_adc)
+            if abs(valeur_midi - valeur_prec_mux[canal_actuel]) >= SEUIL:
+                
                 cc_num = CC_BASE + canal_actuel
                 midi.send(ControlChange(cc_num, valeur_midi))
-                
-                # Mettre à jour les valeurs
-                valeur_prec[canal_actuel] = valeur_adc
-                derniere_valeur_midi[canal_actuel] = valeur_midi
-                
-                # Affichage console
+
+                valeur_prec_mux[canal_actuel] = valeur_midi
                 pourcentage = (valeur_midi / 127) * 100
-                print(f"Canal {canal_actuel} → CC{cc_num}: {valeur_midi:3d}/127 ({pourcentage:5.1f}%)")
-        
-            time.sleep(0.001)  # Court délai entre les canaux
-        
+                #print(f"[MUX] Canal {canal_actuel} → CC{cc_num}: {valeur_midi:3d}/127 ({pourcentage:5.1f}%)")
+                #print(f"[MUX] Canal {canal_actuel} → CC{cc_num}: {valeur_midi}")
+
+        # --- Lecture potars directs ---
+        for pot in pots_directs:
+            valeur_adc_16_bits = pot["pin"].value
+            valeur_adc_12bit = valeur_adc_16_bits >> 4
+            valeur_midi = valeur_vers_midi(valeur_adc_12bit)
+            if abs(valeur_midi - pot["last"]) >= SEUIL:
+                
+                midi.send(ControlChange(pot["cc"], valeur_midi))
+
+                pot["last"] = valeur_midi
+                #print(f"[DIR] CC{pot['cc']}: {valeur_midi:3d}")
+                #print(f"[DIR] CC{pot['cc']}: {valeur_adc_12bit} {valeur_midi}")
+
+        #time.sleep(0.01)  # boucle fluide
+
 except KeyboardInterrupt:
-    # Arrêt propre - désactiver le multiplexeur
     activer_multiplexeur(False)
-    
-    # Envoyer toutes les valeurs à 0
-    for canal in range(8):
+
+    # Remise à zéro de tous les contrôleurs
+    for canal in ports:
         midi.send(ControlChange(CC_BASE + canal, 0, channel=CANAL_MIDI))
-    
-    print("\n📴 Multiplexeur désactivé")
-    print("🎵 Tous les contrôleurs MIDI remis à zéro")
-    print("Arrêt du programme.")
+    for pot in pots_directs:
+        midi.send(ControlChange(pot["cc"], 0, channel=CANAL_MIDI))
+
+    print("\n📴 Arrêt du contrôleur MIDI")
+    print("🎵 Tous les CC remis à zéro")
+
+
 ```
