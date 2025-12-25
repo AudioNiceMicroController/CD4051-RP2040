@@ -10,12 +10,15 @@
 ## Branchements du/des CD4051
 ![image.png](./img.jpg)
 
-## Programme pour 2 potentiomètres directement branché et aussi 2 potentiomètres sur le CD4051
+## Programme pour 1 potentiomètre directement branché et aussi 1 potentiomètre sur le CD4051 (canal 1)
+
+GP0 et GP1 sont utilisés car MIDI USB ≠ MIDI DIN (UART)
 ```
-# Contrôleur MIDI hybride (CD4051 + potars directs) avec sélection de ports
-# Envoie des messages Control Change en temps réel
-# - 8 voies possibles via CD4051 (CC_BASE + canal)
-# - Potars directs sur entrées dédiées
+# ============================================================
+# Contrôleur MIDI USB – RP2040 + CD4051
+# Lissage EMA + seuil MIDI
+# Compatible CircuitPython 10.x
+# ============================================================
 
 import board
 import analogio
@@ -25,116 +28,169 @@ import usb_midi
 import adafruit_midi
 from adafruit_midi.control_change import ControlChange
 
-# ================================
-# Configuration MIDI
-# ================================
-CANAL_MIDI = 6
-CC_BASE = 20      # CC20 → CC27 pour les canaux du CD4051
-SEUIL = 2      # Seuil anti-flutter
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
-midi = adafruit_midi.MIDI(midi_out=usb_midi.ports[1], out_channel=CANAL_MIDI)
+CANAL_MIDI = 6          # 0–15 (canal réel = +1)
+CC_BASE = 20            # CC20 → CC27 (CD4051)
+SEUIL_MIDI = 2          # seuil anti-jitter (0–127)
+EMA_ALPHA = 0.25        # lissage (0.15–0.30 conseillé)
+LOOP_DELAY = 0.005      # 5 ms
 
-# ================================
-# Configuration du CD4051
-# ================================
+# ============================================================
+# MIDI
+# ============================================================
+
+midi = adafruit_midi.MIDI(
+    midi_out=usb_midi.ports[1],
+    out_channel=CANAL_MIDI
+)
+
+# ============================================================
+# CD4051 – GPIO
+# ============================================================
+
 S0 = digitalio.DigitalInOut(board.GP0)
 S1 = digitalio.DigitalInOut(board.GP1)
 S2 = digitalio.DigitalInOut(board.GP2)
 INH = digitalio.DigitalInOut(board.GP3)
 
-for pin in [S0, S1, S2, INH]:
+for pin in (S0, S1, S2, INH):
     pin.direction = digitalio.Direction.OUTPUT
 
-adc = analogio.AnalogIn(board.A0)  # Entrée reliée au CD4051
+adc_mux = analogio.AnalogIn(board.A0)
 
-def activer_multiplexeur(actif: bool):
-    """Active/désactive le multiplexeur"""
-    INH.value = not actif
-    time.sleep(0.0001)
+# ============================================================
+# CD4051 – Fonctions
+# ============================================================
 
-def selectionner_canal(canal: int):
-    """Sélectionne un canal du CD4051 (0–7)"""
-    activer_multiplexeur(False)
-    S0.value = (canal >> 0) & 1
-    S1.value = (canal >> 1) & 1
-    S2.value = (canal >> 2) & 1
-    activer_multiplexeur(True)
+def mux_enable(enable: bool):
+    # INH actif à l'état HAUT → on inverse
+    INH.value = not enable
+    time.sleep(0.000005)  # ~5 µs (compatible CircuitPython)
 
-def valeur_vers_midi(valeur_adc: int) -> int:
-    """Convertit valeur ADC (0–65535) en valeur MIDI (0–127)"""
-    #return max(0, min(127, int((valeur_adc / 65535) * 127)))
-    return max(0, min(127, int((valeur_adc / 4095) * 127)))# le 12 bits: 4095 = 2^12-1
+def mux_select(channel: int):
+    mux_enable(False)
 
-# États précédents pour les 8 canaux du MUX
-valeur_prec_mux = [0] * 8
+    S0.value = bool(channel & 0b001)
+    S1.value = bool(channel & 0b010)
+    S2.value = bool(channel & 0b100)
 
-# Liste des canaux actifs à lire sur le CD4051
-ports = [0, 1, 2, 3, 4, 5, 6, 7]  # tous les canaux
-ports = [0,1]  # exemple : seulement A2 et A3
+    mux_enable(True)
+    time.sleep(0.000005)
 
-# ================================
-# Potars en entrée directe
-# ================================
-pots_directs = [
-    {"pin": analogio.AnalogIn(board.A1), "cc": 30, "last": -1},
-    {"pin": analogio.AnalogIn(board.A2), "cc": 31, "last": -1},
+# ============================================================
+# EMA – Lissage professionnel
+# ============================================================
+
+class EMASmoother:
+    def __init__(self, alpha=0.25):
+        self.alpha = alpha
+        self.value = None
+
+    def update(self, new_value):
+        if self.value is None:
+            self.value = new_value
+        else:
+            self.value += self.alpha * (new_value - self.value)
+        return int(self.value)
+
+# ============================================================
+# Conversion ADC → MIDI
+# ============================================================
+
+def adc_to_midi(adc12: int) -> int:
+    return max(0, min(127, (adc12 * 127) // 4095))
+
+# ============================================================
+# CD4051 – Canaux
+# ============================================================
+# 
+# PORTS_MUX = list(range(8))
+# ema_mux = [EMASmoother(EMA_ALPHA) for _ in range(8)]
+# last_midi_mux = [-1] * 8
+
+PORTS_MUX = [1]
+ema_mux = ema_mux = [EMASmoother(EMA_ALPHA) for _ in range(8)]
+last_midi_mux = [-1] * 8
+
+# ============================================================
+# Potentiomètres directs (optionnels)
+# ============================================================
+
+POTS_DIRECTS = [
+    {
+        "pin": analogio.AnalogIn(board.A1),
+        "ema": EMASmoother(EMA_ALPHA),
+        "cc": 30,
+        "last": -1
+    },
+#     {
+#         "pin": analogio.AnalogIn(board.A2),
+#         "ema": EMASmoother(EMA_ALPHA),
+#         "cc": 31,
+#         "last": -1
+#     },
 ]
 
-# ================================
-# Boucle principale
-# ================================
-print("🎛️ Contrôleur MIDI hybride (CD4051 + potars directs)")
-print("====================================================")
-print(f"Canal MIDI: {CANAL_MIDI}, CC_BASE: {CC_BASE}")
-print(f"Ports actifs CD4051: {ports}")
-print(f"Seuil: {SEUIL}")
-print()
+# ============================================================
+# DÉMARRAGE
+# ============================================================
+
+print("🎛️ Contrôleur MIDI USB – RP2040")
+print("EMA + seuil MIDI")
+print("Canal MIDI :", CANAL_MIDI)
+print("Ports CD4051 :", PORTS_MUX)
+print("===============================")
+
+# ============================================================
+# BOUCLE PRINCIPALE
+# ============================================================
 
 try:
     while True:
-        # --- Lecture CD4051 ---
-        for canal_actuel in ports:
-            selectionner_canal(canal_actuel)
-            valeur_adc_16_bits = adc.value# 12 bits normalement mais python renvoie avec un décallage
-            valeur_adc_12bit = adc.value >> 4   # divise par 16
-            valeur_midi = valeur_vers_midi(valeur_adc_12bit)
-            
-            if abs(valeur_midi - valeur_prec_mux[canal_actuel]) >= SEUIL:
-                
-                cc_num = CC_BASE + canal_actuel
-                midi.send(ControlChange(cc_num, valeur_midi))
 
-                valeur_prec_mux[canal_actuel] = valeur_midi
-                pourcentage = (valeur_midi / 127) * 100
-                #print(f"[MUX] Canal {canal_actuel} → CC{cc_num}: {valeur_midi:3d}/127 ({pourcentage:5.1f}%)")
-                #print(f"[MUX] Canal {canal_actuel} → CC{cc_num}: {valeur_midi}")
+        # --- CD4051 ---
+        for ch in PORTS_MUX:
+            mux_select(ch)
 
-        # --- Lecture potars directs ---
-        for pot in pots_directs:
-            valeur_adc_16_bits = pot["pin"].value
-            valeur_adc_12bit = valeur_adc_16_bits >> 4
-            valeur_midi = valeur_vers_midi(valeur_adc_12bit)
-            if abs(valeur_midi - pot["last"]) >= SEUIL:
-                
-                midi.send(ControlChange(pot["cc"], valeur_midi))
+            raw_adc = adc_mux.value >> 4      # 12 bits
+            smooth_adc = ema_mux[ch].update(raw_adc)
+            midi_val = adc_to_midi(smooth_adc)
 
-                pot["last"] = valeur_midi
-                #print(f"[DIR] CC{pot['cc']}: {valeur_midi:3d}")
-                #print(f"[DIR] CC{pot['cc']}: {valeur_adc_12bit} {valeur_midi}")
+            if abs(midi_val - last_midi_mux[ch]) >= SEUIL_MIDI:
+                midi.send(ControlChange(CC_BASE + ch, midi_val))
+                last_midi_mux[ch] = midi_val
 
-        #time.sleep(0.01)  # boucle fluide
+        # --- Potars directs ---
+        for pot in POTS_DIRECTS:
+            raw_adc = pot["pin"].value >> 4
+            smooth_adc = pot["ema"].update(raw_adc)
+            midi_val = adc_to_midi(smooth_adc)
+
+            if abs(midi_val - pot["last"]) >= SEUIL_MIDI:
+                midi.send(ControlChange(pot["cc"], midi_val))
+                pot["last"] = midi_val
+
+        time.sleep(LOOP_DELAY)
+
+# ============================================================
+# ARRÊT PROPRE
+# ============================================================
 
 except KeyboardInterrupt:
-    activer_multiplexeur(False)
+    mux_enable(False)
 
-    # Remise à zéro de tous les contrôleurs
-    for canal in ports:
-        midi.send(ControlChange(CC_BASE + canal, 0, channel=CANAL_MIDI))
-    for pot in pots_directs:
-        midi.send(ControlChange(pot["cc"], 0, channel=CANAL_MIDI))
+    for ch in PORTS_MUX:
+        midi.send(ControlChange(CC_BASE + ch, 0))
 
-    print("\n📴 Arrêt du contrôleur MIDI")
-    print("🎵 Tous les CC remis à zéro")
+    for pot in POTS_DIRECTS:
+        midi.send(ControlChange(pot["cc"], 0))
+
+    print("\n📴 Arrêt – CC remis à zéro")
+
+
 
 
 ```
