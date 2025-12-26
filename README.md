@@ -1,8 +1,9 @@
 # CD4051 avec RP2040 (raspberry pico)
 
 ## Installer circuitpython
- - Il faut aller sur https://circuitpython.org/board/raspberry_pi_pico/ et télécharger la dernière version. Débrancher le pico, appuyer sur le bouton en le rebranchant (mode DFU). Glisser déposer le .uf2.
- - Télécharger https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases. Copier adafruit_midi dans lib qui est à la racide du RP2040.
+ - Firmware : https://circuitpython.org/board/raspberry_pi_pico
+ - circuitpython : https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases ou https://circuitpython.org/libraries
+ - Reset si besoin d'une remise à 0 du RP2040 : https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html#resetting-flash-memory
 
 ## Thonny IDE
 [Télécharger ici](https://thonny.org). Lors de la programmation il faudra bien choisir circuitpython et non pas micropython.
