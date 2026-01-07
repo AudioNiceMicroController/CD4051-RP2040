@@ -4,9 +4,10 @@
 ## [Branchements du/des CD4051](#branchement)
 
 ## Avec CircuitPython
-- [Installation](#installation-de-circuitpython)
-- [IDE](#installation-de-thonny-ide)
-- [Licence](#licence)
+- [Installation de CircuitPython](#installation-de-circuitpython)
+- [Installation de thonny-ide](#installation-de-thonny-ide)
+- [Programme pour 1 potentiomètre directement branché et aussi 1 potentiomètre sur le CD4051 ](#exemple-1)
+
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 ## Branchement
@@ -21,7 +22,7 @@
 [Télécharger ici](https://thonny.org). Lors de la programmation il faudra bien choisir circuitpython et non pas micropython.
 
 
-## Programme pour 1 potentiomètre directement branché et aussi 1 potentiomètre sur le CD4051 (canal 1)
+### Exemple 1
 
 GP0 et GP1 sont utilisés car MIDI USB ≠ MIDI DIN (UART)
 ```
