@@ -8,7 +8,8 @@
 - [Programme pour 2 potentiomètre directement branchés et aussi 1 potentiomètre sur le CD4051 ](#exemple-1)
 
 ## Avec C++
-- [le code](
+- [le code](#avec-c++)
+- 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 ## Branchement
