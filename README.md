@@ -28,3 +28,4 @@ GP0 et GP1 sont utilisés car MIDI USB ≠ MIDI DIN (UART)
 ```
 
 ```
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
