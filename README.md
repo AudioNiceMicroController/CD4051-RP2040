@@ -26,5 +26,5 @@
 [Code](./rp2040-cd4051.txt)
 
 ## Avec CPP
-Travaillez avec ![im](im2.png) pour importer [Le zip](SUPER_MIDI_2_potars_et_CD4051.zip)
+Travaillez avec ![im](im2.png) dans vscode pour importer [Le zip](SUPER_MIDI_2_potars_et_CD4051.zip)
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
