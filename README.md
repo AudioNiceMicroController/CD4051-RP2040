@@ -1,13 +1,14 @@
 # CD4051 avec RP2040 (raspberry pico) en CircuitPython et C++
 
-
 ## [Branchements du/des CD4051](#branchement)
 
 ## Avec CircuitPython
 - [Installation de CircuitPython](#installation-de-circuitpython)
 - [Installation de thonny-ide](#installation-de-thonny-ide)
-- [Programme pour 1 potentiomètre directement branché et aussi 1 potentiomètre sur le CD4051 ](#exemple-1)
+- [Programme pour 2 potentiomètre directement branchés et aussi 1 potentiomètre sur le CD4051 ](#exemple-1)
 
+## Avec C++
+- [le code](
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 
 ## Branchement
@@ -25,6 +26,8 @@
 ### Exemple 1
 [Code](./rp2040-cd4051.txt)
 
+## Avec C++
+[Télécharger ici](https://thonny.org). Lors de la programmation il faudra bien choisir circuitpython et non pas micropython.
 
 
 GP0 et GP1 sont utilisés car MIDI USB ≠ MIDI DIN (UART)
