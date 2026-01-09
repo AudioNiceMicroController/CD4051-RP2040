@@ -15,7 +15,8 @@
 
 ### Installation de CircuitPython
  - Firmware : https://circuitpython.org/board/raspberry_pi_pico
- - circuitpython : https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases ou https://circuitpython.org/libraries
+ - circuitpython : https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases ou https://circuitpython.org/libraries.
+   Mettre le pico en mode boot et charger le .uf2 puis mettre les librairies midi et mcp3***.
  - Reset si besoin d'une remise à 0 du RP2040 : https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html#resetting-flash-memory
 
 ### Installation de thonny-ide
