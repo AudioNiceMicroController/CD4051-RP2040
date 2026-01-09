@@ -1,6 +1,7 @@
 # CD4051 avec RP2040 (raspberry pico) en CircuitPython et C++
 
-## [Branchements du/des CD4051](#branchement)
+## Cablage du projet
+[Branchements du/des CD4051](#branchement)
 
 ## Méthode 1 : CircuitPython
 - [Installation de CircuitPython](#installation-de-circuitpython)
