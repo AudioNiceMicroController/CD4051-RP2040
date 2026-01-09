@@ -8,7 +8,7 @@
 - [Exemple de programme pour 2 potentiomètre directement branchés et aussi 1 potentiomètre sur le CD4051 ](#exemple-de-programme)
 
 ## Méthode 2 : C++
-- [Avec CPP : vscode et le plugin officiel raspberry pico le zip](#avec-cpp)
+- [Avec CPP : vscode et le plugin officiel raspberry pico](#avec-cpp)
 
 ## Branchement
 ![Image.png](./img.jpg)
