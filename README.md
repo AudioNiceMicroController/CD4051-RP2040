@@ -5,7 +5,7 @@
 ## Avec CircuitPython
 - [Installation de CircuitPython](#installation-de-circuitpython)
 - [Installation de thonny-ide](#installation-de-thonny-ide)
-- [Programme pour 2 potentiomètre directement branchés et aussi 1 potentiomètre sur le CD4051 ](#exemple-1)
+- [Exemple de programme pour 2 potentiomètre directement branchés et aussi 1 potentiomètre sur le CD4051 ](#exemple-de-programme)
 
 ## Avec C++
 - [le zip](#avec-cpp)
@@ -24,7 +24,7 @@
 [Télécharger ici](https://thonny.org). Lors de la programmation il faudra bien choisir circuitpython et non pas micropython.
 
 
-### Exemple 1
+### Exemple de programme
 [Code](./rp2040-cd4051.txt)
 
 ## Avec CPP
