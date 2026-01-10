@@ -26,9 +26,9 @@
 
 
 ### Exemple de programme
-[Code](./rp2040-cd4051.txt)
+Voir SUPER_MIDI_2_potars_et_CD4051_circuitpython
 
 ***
 ## Avec CPP
-Travaillez avec ![im](im2.png) dans vscode pour importer [Le zip](SUPER_MIDI_2_potars_et_CD4051.zip)
+Travaillez avec ![im](im2.png) dans vscode pour importer SUPER_MIDI_2_potars_et_CD4051
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
