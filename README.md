@@ -3,7 +3,7 @@
 ## Cablage du projet
 
 - [Branchements du/des CD4051](#branchement)
-- 
+
 ## CircuitPython
 - [Installation de CircuitPython et les bibliothèques a utiliser](#installation-de-circuitpython)
 - [Installation de thonny-ide](#installation-de-thonny-ide)
