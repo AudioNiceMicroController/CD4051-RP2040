@@ -1,15 +1,18 @@
 # CD4051 avec RP2040 
 ## Cablage du projet
-[Branchements du/des CD4051](#branchement)
+- [Branchements du/des CD4051](#branchement)
 ## CircuitPython
 - [Installation de CircuitPython et les bibliothèques a utiliser](#installation-de-circuitpython)
 - [Installation de thonny-ide](#installation-de-thonny-ide)
-- [Exemple de programme pour 2 potentiomètre directement branchés et aussi 1 potentiomètre sur le CD4051 ](#exemple-de-programme)
+- Exemple de programme pour 2 potentiomètre directement branchés et aussi 1 potentiomètre sur le CD4051 : Voir SUPER_MIDI_2_potars_et_CD4051_circuitpython
 ## C++
-- [Avec CPP : vscode et le plugin officiel raspberry pico](#avec-cpp)
+- Travaillez avec ![im](im2.png) dans vscode pour importer SUPER_MIDI_2_potars_et_CD4051
+
+***
 
 # MCP3008 avec RP2040 
 ## Avec circuitpython
+voir 
 ## Avec C/C++
 ### Installation de CircuitPython
  - Firmware : https://circuitpython.org/board/raspberry_pi_pico. Mettre le pico en mode boot et glisser déposer le .uf2.
@@ -20,9 +23,8 @@
 ### Installation de thonny-ide
 [Télécharger ici](https://thonny.org). Lors de la programmation il faudra bien choisir circuitpython et non pas micropython.
 ### Exemple de programme
-Voir SUPER_MIDI_2_potars_et_CD4051_circuitpython
-## Avec CPP
-Travaillez avec ![im](im2.png) dans vscode pour importer SUPER_MIDI_2_potars_et_CD4051
+
+
 
 
 
