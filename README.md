@@ -36,9 +36,3 @@ voir le dossier SUPER_MIDI_MCP3008_et_2_potars
    
 ### Installation de thonny-ide
 [Télécharger ici](https://thonny.org). Lors de la programmation il faudra bien choisir circuitpython et non pas micropython.
-
-### Exemple de programme
-
-***
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
