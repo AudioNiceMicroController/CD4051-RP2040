@@ -1,0 +1,97 @@
+
+import board
+import busio
+import digitalio
+import time
+import usb_midi
+import adafruit_midi
+from adafruit_midi.control_change import ControlChange
+from adafruit_mcp3xxx.mcp3008 import MCP3008
+from adafruit_mcp3xxx.analog_in import AnalogIn
+from analogio import AnalogIn as ADCIn
+
+# ================================
+# Configuration générale
+# ================================
+CANAL_MIDI = 6
+SEUIL = 2
+ALPHA = 0.15
+DELAI = 0.01  # secondes
+
+# ================================
+# Classe Port MIDI
+# ================================
+class MidiPort:
+    def __init__(self, pin, cc):
+        self.pin = pin
+        self.cc = cc
+        self.filtered = 0
+        self.last = -1
+
+    def read_midi_value(self):
+        # Conversion ADC -> MIDI (0–127)
+        return int(self.pin.value * 127 / 65535)# circuit python lit sur 16 bits = 2^16-1
+
+    def update(self, midi):
+        val = self.read_midi_value()
+
+        # Lissage exponentiel
+        self.filtered = ALPHA * val + (1 - ALPHA) * self.filtered
+        midi_val = int(self.filtered)
+
+        # Seuil minimal
+        send_val = midi_val if midi_val > 2 else 0
+
+        # Envoi conditionnel
+        if abs(send_val - self.last) >= SEUIL:
+            midi.send(ControlChange(self.cc, send_val))
+            self.last = send_val
+            # 👉 self.last mémorise la dernière valeur MIDI réellement envoyée,
+            # pas la valeur lue.
+
+
+# ================================
+# Initialisation SPI + MCP3008
+# ================================
+spi = busio.SPI(clock=board.GP2, MISO=board.GP4, MOSI=board.GP3)
+cs = digitalio.DigitalInOut(board.GP5)
+mcp = MCP3008(spi, cs)
+
+# Canaux MCP et ADC natifs
+mcp_channels = [AnalogIn(mcp, i) for i in range(8)]
+adc_channels = [ADCIn(board.A0), ADCIn(board.A2)]
+
+# ================================
+# Liste des ports MIDI
+# ================================
+ports = [
+    MidiPort(mcp_channels[0], 0),
+#     MidiPort(mcp_channels[1], 1),
+#     MidiPort(mcp_channels[2], 2),
+    # ...
+    MidiPort(adc_channels[0], 8),
+#     MidiPort(adc_channels[1], 9),
+]
+
+# ================================
+# Initialisation MIDI
+# ================================
+midi = adafruit_midi.MIDI(
+    midi_out=usb_midi.ports[1],
+    out_channel=CANAL_MIDI
+)
+
+# ================================
+# Boucle principale
+# ================================
+try:
+    while True:
+        for port in ports:
+            port.update(midi)
+
+        time.sleep(DELAI)
+
+except KeyboardInterrupt:
+    print("\n📴 Arrêt du contrôleur MIDI")
+
+
